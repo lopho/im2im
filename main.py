@@ -97,7 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', '-d', type = str, default = 'cuda')
     parser.add_argument('--batch_size', '-b', type = int, default = 16)
     parser.add_argument('--num_workers', '-w', type = int, default = 2)
-    parser.add_argument('--v2', type = bool, action = 'store_true')
+    parser.add_argument('--v2', action = 'store_true')
     args = parser.parse_args()
     print({**vars(args)})
     torch.backends.cuda.matmul.allow_tf32 = True
