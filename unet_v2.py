@@ -115,7 +115,7 @@ class MidBlock(nn.Module):
         return x
 
 
-class UNet(nn.Module):
+class UNetV2(nn.Module):
     def __init__(self,
             channels_in: int = 3,
             channels_out: int = 3,
