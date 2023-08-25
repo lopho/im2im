@@ -1,4 +1,4 @@
-
+# im2im
 # Copyright (C) 2023  Lopho <contact@lopho.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -25,6 +25,7 @@ from torch.utils.data import DataLoader
 from PIL import Image
 
 from unet import UNet
+from unet_v2 import UNetV2
 
 
 def load_batch(batch: list[str]) -> dict[str, torch.Tensor | list[str]]:
@@ -39,10 +40,13 @@ def save_batch(batch: torch.Tensor, file_names: list[str], output_dir: str) -> N
         Image.fromarray(x).save(f)
 
 
-def load_model(path: str, device: str | torch.device = 'cuda') -> UNet:
+def load_model(path: str, device: str | torch.device = 'cuda', v2: bool = False) -> UNet:
     with open(os.path.join(path, 'configuration.json'), 'r') as f:
         config = json.load(f)
-    model = UNet(**config['config'])
+    if v2:
+        model = UNetV2(**config['config'])
+    else:
+        model = UNet(**config['config'])
     model.load_state_dict(torch.load(os.path.join(path, config['ckpt'])))
     model = model.eval().requires_grad_(False).to(device = device, memory_format = torch.contiguous_format)
     model = torch.compile(model, mode = 'max-autotune', fullgraph = True)
@@ -51,7 +55,7 @@ def load_model(path: str, device: str | torch.device = 'cuda') -> UNet:
 
 @torch.inference_mode()
 def process_images(
-        model: UNet,
+        model: UNet | UNetV2,
         input_dir: str,
         output_dir: str,
         batch_size: int = 16,
@@ -93,12 +97,13 @@ if __name__ == '__main__':
     parser.add_argument('--device', '-d', type = str, default = 'cuda')
     parser.add_argument('--batch_size', '-b', type = int, default = 16)
     parser.add_argument('--num_workers', '-w', type = int, default = 2)
+    parser.add_argument('--v2', type = bool, action = 'store_true')
     args = parser.parse_args()
     print({**vars(args)})
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
     torch.backends.cudnn.benchmark = True
     torch.backends.cudnn.deterministic = False
-    model = load_model(args.checkpoint, device = args.device)
+    model = load_model(args.checkpoint, device = args.device, v2 = args.v2)
     process_images(model = model, **vars(args))
 
