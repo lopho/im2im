@@ -31,6 +31,7 @@ class ConvBlock(nn.Module):
         self.norm = nn.GroupNorm(1, channels_out) if norm else nn.Identity()
         self.act = nn.PReLU(channels_out) if prelu else nn.ReLU()
         self.residual = residual and channels_out == channels_in
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.residual:
             x0 = x
@@ -40,6 +41,7 @@ class ConvBlock(nn.Module):
         if self.residual:
             x = x0 + x
         return x
+
 
 class InBlock(nn.Module):
     def __init__(self,
@@ -55,12 +57,14 @@ class InBlock(nn.Module):
         self.conv2 = ConvBlock(channels_out, channels_out, norm, prelu, residual)
         self.pool = nn.MaxPool2d(2)
         self.drop = nn.Dropout2d(dropout) if dropout > 0 else nn.Identity()
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.pool(x)
         x = self.drop(x)
         return x
+
 
 class OutBlock(nn.Module):
     def __init__(self,
@@ -75,11 +79,13 @@ class OutBlock(nn.Module):
         self.conv1 = ConvBlock(channels_in, channels_mid * 2, norm, prelu, residual)
         self.conv2 = ConvBlock(channels_mid * 2, channels_mid, norm, prelu, residual)
         self.conv_out = nn.Conv2d(channels_mid, channels_out, 3, padding = 'same', padding_mode = 'reflect')
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv_out(x)
         return x
+
 
 class DownBlock(nn.Module):
     def __init__(self,
@@ -94,11 +100,13 @@ class DownBlock(nn.Module):
         self.conv = ConvBlock(channels_in, channels_out, norm, prelu, residual)
         self.pool = nn.MaxPool2d(2)
         self.drop = nn.Dropout2d(dropout) if dropout > 0 else nn.Identity()
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv(x)
         x = self.pool(x)
         x = self.drop(x)
         return x
+
 
 class UpBlock(nn.Module):
     def __init__(self,
@@ -114,12 +122,14 @@ class UpBlock(nn.Module):
         self.conv2 = ConvBlock(channels_out, channels_out, norm, prelu, residual)
         self.up = nn.ConvTranspose2d(channels_out, channels_out, 3, stride = 2, padding = 1, output_padding = 1)
         self.drop = nn.Dropout2d(dropout) if dropout > 0 else nn.Identity()
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.up(x)
         x = self.drop(x)
         return x
+
 
 class MidBlock(nn.Module):
     def __init__(self,
@@ -135,12 +145,14 @@ class MidBlock(nn.Module):
         self.conv = ConvBlock(channels_out, channels_out, norm, prelu, residual)
         self.up = nn.ConvTranspose2d(channels_out, channels_out, 3, stride = 2, padding = 1, output_padding = 1)
         self.drop = nn.Dropout2d(dropout) if dropout > 0 else nn.Identity()
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.down(x)
         x = self.conv(x)
         x = self.up(x)
         x = self.drop(x)
         return x
+
 
 class UNet(nn.Module):
     def __init__(self,
@@ -164,6 +176,7 @@ class UNet(nn.Module):
                 *( UpBlock(144 if i > 0 else 96, 96, dropout, norm, prelu, residual) for i in range(blocks) ),
                 OutBlock(96 + channels_in, 32, channels_out, norm, prelu, residual)
         ))
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.drop_in(x)
         pools: list[torch.Tensor] = [ x ]
