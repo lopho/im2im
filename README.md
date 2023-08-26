@@ -1,5 +1,5 @@
-
 <!--
+im2im
 Copyright (C) 2023  Lopho <contact@lopho.org>
 
 This program is free software: you can redistribute it and/or modify
@@ -17,4 +17,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -->
 
 # im2im
+
+Image reconstruction
 
