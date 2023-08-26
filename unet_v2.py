@@ -25,9 +25,16 @@ class ConvBlock(nn.Module):
             channels_out: int
     ) -> None:
         super().__init__()
-        self.conv = nn.Conv2d(channels_in, channels_out, 3, padding = 'same', padding_mode = 'reflect')
+        self.conv = nn.Conv2d(
+                channels_in,
+                channels_out,
+                3,
+                padding = 'same',
+                padding_mode = 'reflect'
+        )
         self.act = nn.LeakyReLU(0.1)
         self.skip = channels_in == channels_out
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.skip:
             x_0 = x
@@ -46,6 +53,7 @@ class InBlock(nn.Module):
         super().__init__()
         self.conv = ConvBlock(channels_in, channels_out)
         self.down = DownBlock(channels_out, channels_out)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv(x)
         x = self.down(x)
@@ -61,7 +69,14 @@ class OutBlock(nn.Module):
         super().__init__()
         self.conv1 = ConvBlock(channels_in, channels_mid)
         self.conv2 = ConvBlock(channels_mid, channels_mid // 2)
-        self.conv_out = nn.Conv2d(channels_mid // 2, channels_out, 3, padding = 'same', padding_mode = 'reflect')
+        self.conv_out = nn.Conv2d(
+                channels_mid // 2,
+                channels_out,
+                3,
+                padding = 'same',
+                padding_mode = 'reflect'
+        )
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv1(x)
         x = self.conv2(x)
@@ -76,7 +91,15 @@ class DownBlock(nn.Module):
     ) -> None:
         super().__init__()
         self.conv = ConvBlock(channels_in, channels_out)
-        self.pool = nn.Conv2d(channels_out, channels_out, 3, stride = 2, padding = 1, padding_mode = 'reflect')
+        self.pool = nn.Conv2d(
+                channels_out,
+                channels_out,
+                3,
+                stride = 2,
+                padding = 1,
+                padding_mode = 'reflect'
+        )
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv(x)
         x = self.pool(x)
@@ -91,7 +114,15 @@ class UpBlock(nn.Module):
         super().__init__()
         self.conv1 = ConvBlock(channels_in, channels_out)
         self.conv2 = ConvBlock(channels_out, channels_out)
-        self.up = nn.ConvTranspose2d(channels_out, channels_out, 3, stride = 2, padding = 1, output_padding = 1)
+        self.up = nn.ConvTranspose2d(
+                channels_out,
+                channels_out,
+                3,
+                stride = 2,
+                padding = 1,
+                output_padding = 1
+        )
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv1(x)
         x = self.conv2(x)
@@ -107,7 +138,15 @@ class MidBlock(nn.Module):
         super().__init__()
         self.down = DownBlock(channels_in, channels_out)
         self.conv = ConvBlock(channels_out, channels_out)
-        self.up = nn.ConvTranspose2d(channels_out, channels_out, 3, stride = 2, padding = 1, output_padding = 1)
+        self.up = nn.ConvTranspose2d(
+                channels_out,
+                channels_out,
+                3,
+                stride = 2,
+                padding = 1,
+                output_padding = 1
+        )
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.down(x)
         x = self.conv(x)
@@ -130,15 +169,19 @@ class UNetV2(nn.Module):
         ))
         self.mid_block = MidBlock(stepping[0], stepping[0])
         self.up_blocks: nn.ModuleList[UpBlock] = nn.ModuleList((
-                *( UpBlock(stepping[0] + stepping[1] if i > 0 else stepping[1], stepping[1]) for i in range(blocks - 1) ),
+                *(
+                        UpBlock(stepping[0] + stepping[1] if i > 0 else stepping[1], stepping[1])
+                        for i in range(blocks - 1)
+                ),
                 OutBlock(stepping[1] + channels_in, stepping[2], channels_out)
         ))
         self.hparams: dict[str, Any] = {
-            'blocks': blocks,
-            'fixed_step': True,
-            'stepping': stepping,
-            'net': self.__class__.__name__
+                'blocks': blocks,
+                'fixed_step': True,
+                'stepping': stepping,
+                'net': self.__class__.__name__
         }
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         pools: list[torch.Tensor] = [ x ]
         for l in self.down_blocks:
